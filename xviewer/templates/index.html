@@ -131,7 +131,9 @@ svg{display:block}
 .err{padding:32px;text-align:center}
 .err b{display:block;font-size:20px;margin-bottom:6px}
 .err p{color:var(--muted);margin-bottom:16px}
-.btn{border:0;border-radius:9999px;height:36px;padding:0 20px;background:var(--btn);color:var(--btn-ink);font-weight:700;transition:opacity .2s}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:9999px;height:36px;padding:0 20px;background:var(--btn);color:var(--btn-ink);font-weight:700;transition:opacity .2s}
+.btn.alt{background:none;color:var(--ink);border:1px solid var(--line)}
+.err .row2{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 .btn:hover{opacity:.85}
 .sk{display:flex;gap:12px;padding:16px;border-bottom:1px solid var(--line)}
 .sk>i{flex:none;width:40px;height:40px;border-radius:50%}
@@ -345,13 +347,13 @@ const skeleton = () => out.innerHTML = Array(5).fill('<div class="sk"><i></i><di
 const home = () => out.innerHTML = `<div class="hero"><h1>See what's happening</h1>
   <p>Search any public username or hashtag, then save the videos and photos you find.</p>
   <div class="chips"><button class="chip" data-go="#/u/NASA">@NASA</button><button class="chip" data-go="#/tag/photography">#photography</button></div></div>`;
-const fail = m => out.innerHTML = `<div class="err" role="alert"><b>Something went wrong</b><p>${esc(m)}</p><button class="btn" id="retry">Try again</button></div>`;
+const fail = (m, openUrl, retry = true) => out.innerHTML = `<div class="err" role="alert"><b>Couldn't load this</b><p>${esc(m)}</p><div class="row2">${retry ? '<button class="btn" id="retry">Try again</button>' : ''}${openUrl ? `<a class="btn ${retry ? 'alt' : ''}" href="${esc(openUrl)}" target="_blank" rel="noopener noreferrer">Open on X</a>` : ''}</div></div>`;
 
 async function getJSON(url){
   let r;
   try { r = await fetch(url); } catch { throw new Error('You appear to be offline. Check your connection.'); }
   const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data.error || 'Request failed.');
+  if (!r.ok) { const e = new Error(data.error || 'Request failed.'); e.status = r.status; throw e; }
   return data;
 }
 
@@ -391,7 +393,12 @@ async function route(){
       document.title = 'Post · XViewer';
       out.innerHTML = feed(d.posts);
     } else home();
-  } catch (e) { if (my === token) fail(e.message); }
+  } catch (e) {
+    if (my !== token) return;
+    const mm = h.match(/^\/(u|tag)\/([^/]+)/);
+    const openUrl = mm ? (mm[1] === 'u' ? `https://x.com/${mm[2]}` : `https://x.com/hashtag/${mm[2]}`) : '';
+    fail(e.message, openUrl, e.status !== 501);
+  }
   window.scrollTo({top: 0});
 }
 

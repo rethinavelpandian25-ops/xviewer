@@ -293,8 +293,8 @@ def parse_nitter(root):
 def fetch_hashtag(tag):
     if not NITTER_URLS:
         raise ViewerError(
-            "Hashtag search isn't set up on this server. X requires login for search, so add "
-            "a working Nitter instance to the NITTER_URLS environment variable.", 501)
+            "Hashtag search isn't available on this server. X requires login for search, and "
+            "the public Nitter sources it relied on have mostly gone offline.", 501)
     for base in NITTER_URLS:
         try:
             r = http_get(f"{base}/search/rss", params={"f": "tweets", "q": f"#{tag}"})
